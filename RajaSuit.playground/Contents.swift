@@ -1,12 +1,19 @@
 /*:
  
- # Title
+# Raja Suit
  
- Text
-    It's a game every Indonesian know and play.
-*/
+ There are three available animals, each has one weakness and one strength.
 
-//: A UIKit based Playground for presenting user interface
+ 1. Ant, can beat Elephant.
+ 2. Elephant, can beat Giraffe.
+ 3. Giraffe, can beat Ant.
+ 
+ ## How to Play
+
+ Pick one from three available animal to fight your opponent.
+
+*/
+//: Icon made by [Freepik](https://www.flaticon.com/authors/freepik) from [www.flaticon.com](http://www.flaticon.com/)
   
 import UIKit
 import PlaygroundSupport

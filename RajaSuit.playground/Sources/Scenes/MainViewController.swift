@@ -8,6 +8,8 @@ import UIKit
 
 public final class MainViewController: UIViewController {
     
+    private let model = AnimalPrediction()
+    
     private let computerLabel = NameLabel(name: "Computer")
     private let playerLabel = NameLabel(name: "Player")
     
@@ -50,20 +52,23 @@ public final class MainViewController: UIViewController {
     
     private let challengeButton: UIButton = {
         let button = UIButton()
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.layer.borderWidth = 5.0
-        button.layer.borderColor = UIColor.redGrey.cgColor
-        button.layer.cornerRadius = 10.0
-        button.setTitle("Challange", for: .normal)
-        button.setTitleColor(UIColor.darkredGrey, for: .normal)
-        button.titleLabel?.font = .boldSystemFont(ofSize: 18)
-        button.backgroundColor = .lightRedGrey
+            button.translatesAutoresizingMaskIntoConstraints = false
+            button.layer.borderWidth = 5.0
+            button.layer.borderColor = UIColor.redGrey.cgColor
+            button.layer.cornerRadius = 10.0
+            button.setTitle("Challange", for: .normal)
+            button.setTitleColor(UIColor.darkredGrey, for: .normal)
+            button.titleLabel?.font = .boldSystemFont(ofSize: 18)
+            button.backgroundColor = .lightRedGrey
+        
         return button
     }()
     
     private var computerAnimal = Animal.getRandomAnimal()
     private var playerAnimal: Animal = .ant
     private var currentResult = [String]()
+    private var computerScore = 0
+    private var playerScore = 0
     
     public init() {
         super.init(nibName: nil, bundle: nil)
@@ -78,7 +83,6 @@ public final class MainViewController: UIViewController {
         super.viewDidLoad()
         computerAnimalImage.isHidden = true
         playerAnimalImage.isHidden = true
-        challengeButton.isHidden = true
     }
     
     
@@ -140,13 +144,42 @@ public final class MainViewController: UIViewController {
         challengeButton.setTitle("Challenge", for: .normal)
     }
     
+    var previousCondition = [String]()
+    var previous_result = "none"
+    var previous_animal = "none"
+    
+    func getAnimalPrediction() -> Animal {
+        var predictedAnimal: Animal = .ant
+        
+        do {
+            let prediction = try model.prediction(input: AnimalPrediction_1Input(previous_condition: previousCondition.joined(separator: ", "), previous_result: previous_result, previous_animal: previous_animal, selected_animal: 0, result: "win"))
+            let index = Int(prediction.prediction_animal)
+            let animal_list: [Animal] = [.ant, .elephant, .giraffe]
+            
+            guard index > 0 && index < animal_list.count else {
+                return Animal.getRandomAnimal()
+            }
+            
+            predictedAnimal = animal_list[index]
+            
+        } catch {
+            print("Error feeding data at: \(#function)")
+            predictedAnimal = Animal.getRandomAnimal()
+        }
+        
+        return predictedAnimal
+    }
+    
     @objc
     func startchallenge(_ sender: UIButton) {
+        guard !currentResult.isEmpty else { return }
+        
         if currentResult.count == Animal.allCases.count {
             reset()
         }
         
-        computerAnimal = Animal.getRandomAnimal()
+        previousCondition.append(currentResult.isEmpty ? "none" : playerAnimal.rawValue)
+        computerAnimal = getAnimalPrediction()
         computerInfoLabel.text = "is preparing..."
         prepareLabel.text = "Pick your animal..."
         computerAnimalImage.isHidden = true
@@ -181,6 +214,7 @@ public final class MainViewController: UIViewController {
 
         updateView()
         processResult()
+        previous_animal = playerAnimal.rawValue
     }
     
     func updateView() {
@@ -191,7 +225,6 @@ public final class MainViewController: UIViewController {
         antButton.isHidden = true
         elephantButton.isHidden = true
         giraffeButton.isHidden = true
-        challengeButton.isHidden = false
         
         if currentResult.count == Animal.allCases.count-1 {
             challengeButton.setTitle("Restart", for: .normal)
@@ -202,27 +235,50 @@ public final class MainViewController: UIViewController {
         guard playerAnimal != computerAnimal else {
             currentResult.append("⚪️")
             playerInfoLabel.text = currentResult.joined(separator: " ")
+            
             prepareLabel.text = "It's a draw.."
+            previous_result = "draw"
+            
+            computerScore += 1
+            playerScore += 1
+            
+            if currentResult.count == 3 {
+                prepareLabel.text! += computerScore > playerScore ? " It's over, Computer Wins." : computerScore == playerScore ? " You're both strong." : "\nCongratulation! You Win!!"
+            }
             
             return
         }
         
         prepareLabel.text = "You Win!!!"
+        previous_result = "lose"
         
         if playerAnimal == .ant && computerAnimal == .elephant {
             currentResult.append("🟢")
             
+            playerScore += 3
+            
         } else if playerAnimal == .elephant && computerAnimal == .giraffe {
             currentResult.append("🟢")
+            
+            playerScore += 3
             
         } else if playerAnimal == .giraffe && computerAnimal == .ant {
             currentResult.append("🟢")
             
+            playerScore += 3
+            
         } else {
             currentResult.append("🔴")
             prepareLabel.text = "You lose..."
+            previous_result = "win"
+            
+            computerScore += 3
         }
         
         playerInfoLabel.text = currentResult.joined(separator: " ")
+        
+        if currentResult.count == 3 {
+            prepareLabel.text! += computerScore > playerScore ? " It's over, Computer Wins." : computerScore == playerScore ? " You're both strong." : " Congratulation! You beat Computer!!"
+        }
     }
 }
